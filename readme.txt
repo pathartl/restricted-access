@@ -1,5 +1,5 @@
 === Restricted Access ===
-Contributors: pathartl
+Contributors: pathartl, betzster
 Requires at least: 3.5
 Tested up to: 3.6
 Stable tag: 1.0
