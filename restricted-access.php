@@ -152,7 +152,7 @@ function restricted_access_deactivate() {
 //---------------------------------------------------//
 
 function restricted_access_protect_whole_site() {
-	global $post;
+	global $post, $restricted_access_option_name;
 
 	// Guilty until proven innocent?
 	$allowed = false;
