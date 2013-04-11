@@ -11,9 +11,10 @@ License: GPL2
 
 $option_name = 'restricted-access';
 
-add_action('admin_init', array($this, 'admin_init'));
+add_action('admin_init', 'admin_init');
 
 function admin_init() {
+	global $option_name;
 	register_setting('restricted_access_options', $option_name, 'validate');
 }
 
@@ -148,7 +149,7 @@ function options_do_page() {
 }
 
 // Listen for the activate event
-register_activation_hook(RESTRICTED_ACCESS, 'activate');
+register_activation_hook(__FILE__, 'activate');
 
 function activate() {
 	update_option('restricted-access-allowed', '');
