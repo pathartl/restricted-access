@@ -162,13 +162,13 @@ function restricted_access_protect_whole_site() {
 
 	// Check if user is not logged in and if the page is locked or the whole site is locked
 	// This just checks to see if a user is logged in. Any checking of their role is done after the else
-	if ( !is_user_logged_in() && (get_post_meta($post->ID, 'restricted_access_lock_page', TRUE) || ($options['restricted-access-lock-site']) ) ) {
+	if ( !is_user_logged_in() && ((get_post_meta($post->ID, 'restricted_access_lock_page', TRUE) || ($options['restricted-access-lock-site'])) ) ) {
 		// Ask user to log in
 		wp_safe_redirect(network_site_url('/wp-login.php?redirect_to=' . get_site_url()));
 		// NOTE: This will do authentication through the main network site if this is a network install
 		// We do this to better work with plugins like Active Directory Integration
 
-	} else {
+	} elseif(is_user_logged_in()) {
 		// Let's check some roles
 		// Get role from main site in WPMU
 		$user_role = get_user_meta(get_current_user_id(), 'wp_capabilities');
@@ -176,12 +176,11 @@ function restricted_access_protect_whole_site() {
 
 		//$allowed_roles = explode(',', $options['restricted-access-allowed'])
 
-		$allowed_roles = explode(",", $options['allowed_roles']);
-		$denied_roles = explode(",", $options['denied_roles']);
-		$lock_site = explode(",", $options['lock_site']);
+		$allowed_roles = explode(",", $options['restricted-access-allowed']);
+		$denied_roles = explode(",", $options['restricted-access-denied']);
 
 		// We'll check the user's role to see if it's allowed
-		if ($options['allowed_roles'] != '') {
+		if (!empty($options['restricted-access-allowed'])) {
 			foreach ($allowed_roles as $role) {
 				if($user_role[0] == $role) {
 					// Open the gates!
@@ -191,7 +190,7 @@ function restricted_access_protect_whole_site() {
 		}
 
 		// If we have some denied roles and no allowed roles...
-		if (($options['denied_roles'] != '') && ($options['allowed_roles'] == '')) {
+		if (!empty($options['restricted-access-denied']) && empty($options['restricted-access-allowed'])) {
 			$allowed = true;
 			// Check each denied role for our user's role
 			foreach ($denied_roles as $role) {
