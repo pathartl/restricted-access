@@ -9,17 +9,17 @@ Author URI: http://pathartl.me
 License: GPL2
 */
 
-$option_name = 'restricted-access';
+$restricted_access_option_name = 'restricted-access';
 
-add_action('admin_init', 'admin_init');
+add_action('admin_init', 'restricted_access_admin_init');
 
-function admin_init() {
-	global $option_name;
-	register_setting('restricted_access_options', $option_name, 'validate');
+function restricted_access_admin_init() {
+	global $restricted_access_option_name;
+	register_setting('restricted_access_options', $restricted_access_option_name, 'restricted_access_validate');
 }
 
 // Sanitize our input
-function validate($input) {
+function restricted_access_validate($input) {
 	$valid = array();
 	$valid['allowed_roles'] = sanitize_text_field($input['allowed_roles']);
 	$valid['denied_roles'] = sanitize_text_field($input['denied_roles']);
@@ -107,16 +107,18 @@ function save_restricted_access_meta_box( $post_id, $post ) {
 // All dashboard pages handled below
 //---------------------------------------------------//
 
-add_action('admin_menu', 'add_page');
+add_action('admin_menu', 'restricted_access_add_page');
 
-function add_page() {
-	add_users_page('Restricted Access Options', 'Restricted Access', 'manage_options', 'restricted_access_options', 'options_do_page');
+function restricted_access_add_page() {
+	add_users_page('Restricted Access Options', 'Restricted Access', 'manage_options', 'restricted_access_options', 'restricted_access_options_do_page');
 }
 
 
 // Print the menu page itself
-function options_do_page() {
-	$options = get_option($option_name);
+function restricted_access_options_do_page() {
+	global $restricted_access_option_name;
+
+	$options = get_option($restricted_access_option_name);
 	if ( isset($_POST['allowed_roles']) && isset($_POST['denied_roles']) ) {
 		update_option('restricted-access-allowed', $_POST['allowed_roles']);
 		update_option('restricted-access-denied', $_POST['denied_roles']);
@@ -149,15 +151,16 @@ function options_do_page() {
 }
 
 // Listen for the activate event
-register_activation_hook(__FILE__, 'activate');
+register_activation_hook(__FILE__, 'restricted_access_activate');
+register_deactivation_hook(__FILE__, 'restricted_access_deactivate');
 
-function activate() {
+function restricted_access_activate() {
 	update_option('restricted-access-allowed', '');
 	update_option('restricted-access-denied', '');
 	update_option('restricted-access-lock-site', '');
 }
 
-function deactivate() {
+function restricted_access_deactivate() {
 	delete_option('restricted-access-allowed');
 	delete_option('restricted-access-denied');
 	delete_option('restricted-access-lock-site');
@@ -167,7 +170,7 @@ function deactivate() {
 // Main Logic
 //---------------------------------------------------//
 
-function protect_whole_site() {
+function restricted_access_protect_whole_site() {
 	global $post;
 
 	// Guilty until proven innocent?
@@ -230,6 +233,6 @@ function protect_whole_site() {
 	}
 }
 
-add_action('template_redirect', 'protect_whole_site');
+add_action('template_redirect', 'restricted_access_protect_whole_site');
 
 ?>
