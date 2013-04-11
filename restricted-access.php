@@ -105,7 +105,7 @@ function restricted_access_options_do_page() {
 	if ( isset($_POST['allowed_roles']) && isset($_POST['denied_roles']) ) {
 		$options['restricted-access-allowed'] = esc_attr($_POST['allowed_roles']);
 		$options['restricted-access-denied'] = esc_attr($_POST['denied_roles']);
-		$options['restricted-access-lock-site'] = esc_attr($_POST['lock_site']);
+		$options['restricted-access-lock-site'] = isset($_POST['lock_site']);
 
 		update_option($restricted_access_option_name, $options);
 	}
@@ -123,7 +123,7 @@ function restricted_access_options_do_page() {
 					<td><input type="text" size="60" name="denied_roles" value="<?php if (isset($options['restricted-access-denied'])) echo $options['restricted-access-denied']; ?>" /></td>
 				</tr>
 				<tr valign="top"><th scope="row">Lock site?</th>
-					<td><input type="checkbox" <?php if ($options['restricted-access-lock-site']) echo 'checked'; ?> name="lock_site" value="yes" /></td>
+				<td><input type="checkbox" name="lock_site" value="1" <?php checked($options['restricted-access-lock-site']); ?>></td>
 				</tr>
 			</table>
 			<p class="submit">
@@ -162,7 +162,7 @@ function restricted_access_protect_whole_site() {
 
 	// Check if user is not logged in and if the page is locked or the whole site is locked
 	// This just checks to see if a user is logged in. Any checking of their role is done after the else
-	if ( !is_user_logged_in() && (get_post_meta($post->ID, 'restricted_access_lock_page', TRUE) || ($options['restricted-access-lock-site'] == "yes") ) ) {
+	if ( !is_user_logged_in() && (get_post_meta($post->ID, 'restricted_access_lock_page', TRUE) || ($options['restricted-access-lock-site']) ) ) {
 		// Ask user to log in
 		wp_safe_redirect(network_site_url('/wp-login.php?redirect_to=' . get_site_url()));
 		// NOTE: This will do authentication through the main network site if this is a network install
@@ -202,7 +202,7 @@ function restricted_access_protect_whole_site() {
 			}
 		}
 
-		if ( !get_post_meta($post->ID, 'restricted_access_lock_page', TRUE) && !($options['restricted-access-lock-site'] == "yes") )
+		if ( !get_post_meta($post->ID, 'restricted_access_lock_page', TRUE) && !($options['restricted-access-lock-site']) )
 			$allowed = true;
 
 		// If our criteria was not met, redirect!
