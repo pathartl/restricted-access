@@ -158,7 +158,7 @@ function restricted_access_protect_whole_site() {
 	$allowed = false;
 
 	// Get our options
-	$options = get_option('restricted_access');
+	$options = get_option($restricted_access_option_name);
 
 	// Check if user is not logged in and if the page is locked or the whole site is locked
 	// This just checks to see if a user is logged in. Any checking of their role is done after the else
