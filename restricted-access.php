@@ -11,23 +11,6 @@ License: GPL2
 
 $restricted_access_option_name = 'restricted-access';
 
-add_action('admin_init', 'restricted_access_admin_init');
-
-function restricted_access_admin_init() {
-	global $restricted_access_option_name;
-	register_setting('restricted_access_options', $restricted_access_option_name, 'restricted_access_validate');
-}
-
-// Sanitize our input
-function restricted_access_validate($input) {
-	$valid = array();
-	$valid['allowed_roles'] = sanitize_text_field($input['allowed_roles']);
-	$valid['denied_roles'] = sanitize_text_field($input['denied_roles']);
-	$valid['lock_site'] = sanitize_text_field($input['lock_site']);
-
-	return $valid;
-}
-
 //---------------------------------------------------//
 // Page Metaboxes
 //---------------------------------------------------//
@@ -117,12 +100,14 @@ function restricted_access_add_page() {
 // Print the menu page itself
 function restricted_access_options_do_page() {
 	global $restricted_access_option_name;
-
 	$options = get_option($restricted_access_option_name);
+
 	if ( isset($_POST['allowed_roles']) && isset($_POST['denied_roles']) ) {
-		update_option('restricted-access-allowed', $_POST['allowed_roles']);
-		update_option('restricted-access-denied', $_POST['denied_roles']);
-		update_option('restricted-access-lock-site', $_POST['lock_site']);
+		$options['restricted-access-allowed'] = esc_attr($_POST['allowed_roles']);
+		$options['restricted-access-denied'] = esc_attr($_POST['denied_roles']);
+		$options['restricted-access-lock-site'] = esc_attr($_POST['lock_site']);
+
+		update_option($restricted_access_option_name, $options);
 	}
 ?>
 	<div class="wrap">
@@ -132,13 +117,13 @@ function restricted_access_options_do_page() {
 			Enter the roles that you would like to allow or deny on your site in the fields below (comma separated e.g. "administrator,editor,author")
 			<table class="form-table">
 				<tr valign="top"><th scope="row">Allowed Roles:</th>
-					<td><input type="text" size="60" name="allowed_roles" value="<?php echo get_option('restricted-access-allowed'); ?>" /></td>
+					<td><input type="text" size="60" name="allowed_roles" value="<?php if (isset($options['restricted-access-allowed'])) echo $options['restricted-access-allowed']; ?>" /></td>
 				</tr>
 				<tr valign="top"><th scope="row">Denied Roles:</th>
-					<td><input type="text" size="60" name="denied_roles" value="<?php echo get_option('restricted-access-denied'); ?>" /></td>
+					<td><input type="text" size="60" name="denied_roles" value="<?php if (isset($options['restricted-access-denied'])) echo $options['restricted-access-denied']; ?>" /></td>
 				</tr>
 				<tr valign="top"><th scope="row">Lock site?</th>
-					<td><input type="checkbox" <?php if (get_option('restricted-access-lock-site')) echo 'checked="yes"'; ?> name="lock_site" value="yes" /></td>
+					<td><input type="checkbox" <?php if ($options['restricted-access-lock-site']) echo 'checked'; ?> name="lock_site" value="yes" /></td>
 				</tr>
 			</table>
 			<p class="submit">
@@ -155,15 +140,11 @@ register_activation_hook(__FILE__, 'restricted_access_activate');
 register_deactivation_hook(__FILE__, 'restricted_access_deactivate');
 
 function restricted_access_activate() {
-	update_option('restricted-access-allowed', '');
-	update_option('restricted-access-denied', '');
-	update_option('restricted-access-lock-site', '');
+	add_option($restricted_access_option_name);
 }
 
 function restricted_access_deactivate() {
-	delete_option('restricted-access-allowed');
-	delete_option('restricted-access-denied');
-	delete_option('restricted-access-lock-site');
+	delete_option($restricted_access_option_name);
 }
 
 //---------------------------------------------------//
@@ -176,9 +157,12 @@ function restricted_access_protect_whole_site() {
 	// Guilty until proven innocent?
 	$allowed = false;
 
+	// Get our options
+	$options = get_option('restricted_access');
+
 	// Check if user is not logged in and if the page is locked or the whole site is locked
 	// This just checks to see if a user is logged in. Any checking of their role is done after the else
-	if ( !is_user_logged_in() && (get_post_meta($post->ID, 'restricted_access_lock_page', TRUE) || (get_option('restricted-access-lock-site') == "yes") ) ) {
+	if ( !is_user_logged_in() && (get_post_meta($post->ID, 'restricted_access_lock_page', TRUE) || ($options['restricted-access-lock-site'] == "yes") ) ) {
 		// Ask user to log in
 		wp_safe_redirect(network_site_url('/wp-login.php?redirect_to=' . get_site_url()));
 		// NOTE: This will do authentication through the main network site if this is a network install
@@ -190,12 +174,7 @@ function restricted_access_protect_whole_site() {
 		$user_role = get_user_meta(get_current_user_id(), 'wp_capabilities');
 		$user_role = array_keys($user_role[0]);
 
-		//$allowed_roles = explode(',', get_option('restricted-access-allowed'))
-
-		// Get our options
-		$options['allowed_roles'] = get_option('restricted-access-allowed');
-		$options['denied_roles'] = get_option('restricted-access-denied');
-		$options['lock_site'] = get_option('restricted-access-lock-site');
+		//$allowed_roles = explode(',', $options['restricted-access-allowed'])
 
 		$allowed_roles = explode(",", $options['allowed_roles']);
 		$denied_roles = explode(",", $options['denied_roles']);
@@ -223,7 +202,7 @@ function restricted_access_protect_whole_site() {
 			}
 		}
 
-		if ( !get_post_meta($post->ID, 'restricted_access_lock_page', TRUE) && !(get_option('restricted-access-lock-site') == "yes") )
+		if ( !get_post_meta($post->ID, 'restricted_access_lock_page', TRUE) && !($options['restricted-access-lock-site'] == "yes") )
 			$allowed = true;
 
 		// If our criteria was not met, redirect!
