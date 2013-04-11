@@ -2,7 +2,7 @@
 /*
 Plugin Name: Restricted Access
 Plugin URI: http://pathartl.me/5463/restricted-access-wordpress-plugin
-Description: When enabled, only allows users that have the appropriate role are allowed to visit the site
+Description: Only allows users that have the appropriate role to visit the site
 Author: Pat Hartl
 Version: 1.0
 Author URI: http://pathartl.me
