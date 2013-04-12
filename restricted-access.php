@@ -12,6 +12,99 @@ License: GPL2
 $restricted_access_option_name = 'restricted-access';
 
 //---------------------------------------------------//
+// All dashboard pages handled below
+//---------------------------------------------------//
+
+add_action('admin_menu', 'restricted_access_add_page');
+
+function restricted_access_add_page() {
+	add_users_page('Restricted Access Options', 'Restricted Access', 'manage_options', 'restricted_access_options', 'restricted_access_options_do_page');
+}
+
+// Generates checkbox inputs listing the roles
+// $input_name parameter is the name parameter of the form element
+// $checked_roles should be an array of role slugs that will be prechecked
+// Example input: restricted_access_role_selector("allowed_roles")
+// Output: <input type="checkbox" name="allowed_roles[]" value="administrator" />
+function restricted_access_role_selector($input_name, $checked_roles) {
+	global $wp_roles;
+
+	// The display name of the role, not the slug
+	$role_display_name = array_values($wp_roles->get_names());
+
+	// The role slug
+	$role_slug_name = array_keys($wp_roles->get_names());
+
+	// We could have used foreach I guess, but I don't think it's as convienent.
+	for ($i = 0; $i < count($role_display_name); $i++) {
+		// Check if our role has been checked and saved
+		if ( count($checked_roles) && in_array($role_slug_name[$i], $checked_roles) ) {
+			$checked = 'checked="yes"';
+		} else {
+			$checked = '';
+		}
+
+		// Do the HTML
+		echo '<label>';
+		echo '<input type="checkbox" name="' . $input_name . '[]" value="' . $role_slug_name[$i] . '" ' . $checked . ' /> ';
+		echo $role_display_name[$i] . '</label><br>';
+	}
+
+}
+
+// Print the menu page itself
+function restricted_access_options_do_page() {
+	global $restricted_access_option_name;
+	$options = get_option($restricted_access_option_name);
+
+	if ( isset($_POST['allowed_roles']) && isset($_POST['denied_roles']) ) {
+		$options['restricted-access-allowed'] = $_POST['allowed_roles'];
+		$options['restricted-access-denied'] = $_POST['denied_roles'];
+		$options['restricted-access-lock-site'] = isset($_POST['lock_site']);
+
+		update_option($restricted_access_option_name, $options);
+	}
+?>
+
+	<div class="wrap">
+		<h2>Restricted Access Options</h2>
+		<h3>Role Filters</h3>
+		<form method="post" action="users.php?page=restricted_access_options">
+			Enter the roles that you would like to allow or deny on your site in the fields below (comma separated e.g. "administrator,editor,author")
+			<table class="form-table">
+				<tr valign="top"><th scope="row">Allowed Roles:</th>
+					<td><?php restricted_access_role_selector('allowed_roles', $options['restricted-access-allowed']); ?></td>
+				</tr>
+				<tr valign="top"><th scope="row">Denied Roles:</th>
+					<td><?php restricted_access_role_selector('denied_roles', $options['restricted-access-denied']); ?></td>
+				</tr>
+				<tr valign="top"><th scope="row">Lock site?</th>
+				<td><input type="checkbox" name="lock_site" value="1" <?php checked($options['restricted-access-lock-site']); ?>></td>
+				</tr>
+			</table>
+			<p class="submit">
+				<input type="submit" class="button-primary" value="Save Changes" />
+			</p>
+		</form>
+		Developed by <a href="http://pathartl.me">Pat Hartl</a>
+	</div>
+	
+<?php
+}
+
+// Listen for the activate event
+register_activation_hook(__FILE__, 'restricted_access_activate');
+register_deactivation_hook(__FILE__, 'restricted_access_deactivate');
+
+function restricted_access_activate() {
+	add_option($restricted_access_option_name);
+}
+
+function restricted_access_deactivate() {
+	delete_option($restricted_access_option_name);
+}
+
+//---------------------------------------------------//
 // Page Metaboxes
 //---------------------------------------------------//
 
@@ -87,67 +180,6 @@ function save_restricted_access_meta_box( $post_id, $post ) {
 }
 
 //---------------------------------------------------//
-// All dashboard pages handled below
-//---------------------------------------------------//
-
-add_action('admin_menu', 'restricted_access_add_page');
-
-function restricted_access_add_page() {
-	add_users_page('Restricted Access Options', 'Restricted Access', 'manage_options', 'restricted_access_options', 'restricted_access_options_do_page');
-}
-
-
-// Print the menu page itself
-function restricted_access_options_do_page() {
-	global $restricted_access_option_name;
-	$options = get_option($restricted_access_option_name);
-
-	if ( isset($_POST['allowed_roles']) && isset($_POST['denied_roles']) ) {
-		$options['restricted-access-allowed'] = esc_attr($_POST['allowed_roles']);
-		$options['restricted-access-denied'] = esc_attr($_POST['denied_roles']);
-		$options['restricted-access-lock-site'] = isset($_POST['lock_site']);
-
-		update_option($restricted_access_option_name, $options);
-	}
-?>
-	<div class="wrap">
-		<h2>Restricted Access Options</h2>
-		<h3>Role Filters</h3>
-		<form method="post" action="users.php?page=restricted_access_options">
-			Enter the roles that you would like to allow or deny on your site in the fields below (comma separated e.g. "administrator,editor,author")
-			<table class="form-table">
-				<tr valign="top"><th scope="row">Allowed Roles:</th>
-					<td><input type="text" size="60" name="allowed_roles" value="<?php if (isset($options['restricted-access-allowed'])) echo $options['restricted-access-allowed']; ?>" /></td>
-				</tr>
-				<tr valign="top"><th scope="row">Denied Roles:</th>
-					<td><input type="text" size="60" name="denied_roles" value="<?php if (isset($options['restricted-access-denied'])) echo $options['restricted-access-denied']; ?>" /></td>
-				</tr>
-				<tr valign="top"><th scope="row">Lock site?</th>
-				<td><input type="checkbox" name="lock_site" value="1" <?php checked($options['restricted-access-lock-site']); ?>></td>
-				</tr>
-			</table>
-			<p class="submit">
-				<input type="submit" class="button-primary" value="Save Changes" />
-			</p>
-		</form>
-		Developed by <a href="http://pathartl.me">Pat Hartl</a>
-	</div>
-<?php
-}
-
-// Listen for the activate event
-register_activation_hook(__FILE__, 'restricted_access_activate');
-register_deactivation_hook(__FILE__, 'restricted_access_deactivate');
-
-function restricted_access_activate() {
-	add_option($restricted_access_option_name);
-}
-
-function restricted_access_deactivate() {
-	delete_option($restricted_access_option_name);
-}
-
-//---------------------------------------------------//
 // Main Logic
 //---------------------------------------------------//
 
@@ -188,6 +220,8 @@ function restricted_access_protect_whole_site() {
 				}
 			}
 		}
+
+
 
 		// If we have some denied roles and no allowed roles...
 		if (!empty($options['restricted-access-denied']) && empty($options['restricted-access-allowed'])) {
