@@ -58,11 +58,14 @@ function restricted_access_options_do_page() {
 	$options = get_option($restricted_access_option_name);
 
 	if ( isset($_POST['allowed_roles']) && isset($_POST['denied_roles']) ) {
-		$options['restricted-access-allowed'] = $_POST['allowed_roles'];
-		$options['restricted-access-denied'] = $_POST['denied_roles'];
+		$options['restricted-access-allowed'] = array_map('esc_attr', $_POST['allowed_roles']);
+		$options['restricted-access-denied'] = array_map('esc_attr', $_POST['denied_roles']);
 		$options['restricted-access-lock-site'] = isset($_POST['lock_site']);
 
 		update_option($restricted_access_option_name, $options);
+
+		// Give the users a notice that the settings have been saved
+		echo '<div class="updated"><p>Your settings have been saved!</p></div>';
 	}
 ?>
 
@@ -86,7 +89,7 @@ function restricted_access_options_do_page() {
 				<input type="submit" class="button-primary" value="Save Changes" />
 			</p>
 		</form>
-		Developed by <a href="http://pathartl.me">Pat Hartl</a>
+		Developed by <a href="http://pathartl.me">Pat Hartl</a> and <a href="http://joshbetz.com">Josh Betz</a>
 	</div>
 	
 <?php
@@ -208,8 +211,8 @@ function restricted_access_protect_whole_site() {
 
 		//$allowed_roles = explode(',', $options['restricted-access-allowed'])
 
-		$allowed_roles = explode(",", $options['restricted-access-allowed']);
-		$denied_roles = explode(",", $options['restricted-access-denied']);
+		$allowed_roles = $options['restricted-access-allowed'];
+		$denied_roles = $options['restricted-access-denied'];
 
 		// We'll check the user's role to see if it's allowed
 		if (!empty($options['restricted-access-allowed'])) {
